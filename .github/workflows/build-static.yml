@@ -14,7 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         toolchain:
-          - {runs_on: macos-10.15, name: "macOS", archive_name: "macos", archive_extension: ".tar.gz", CC: /usr/local/opt/llvm/bin/clang, CXX: /usr/local/opt/llvm/bin/clang++, CFLAGS: "-isystem /usr/local/opt/llvm/include -isystem /usr/local/opt/llvm/include/c++/v1 -mmacosx-version-min=10.9 -D_LIBCPP_DISABLE_AVAILABILITY", LDFLAGS: "-L/usr/local/opt/llvm/lib -mlinker-version=278 -nostdlib++ /usr/local/opt/llvm/lib/libc++.a /usr/local/opt/llvm/lib/libc++abi.a"}
+          - {runs_on: macos-10.15, name: "macOS", archive_name: "macos", archive_extension: ".tar.gz", CC: /usr/local/opt/llvm/bin/clang, CXX: /usr/local/opt/llvm/bin/clang++, CFLAGS: "-isystem /usr/local/opt/llvm/include -isystem /usr/local/opt/llvm/include/c++/v1 -mmacosx-version-min=10.9 -D_LIBCPP_DISABLE_AVAILABILITY", LDFLAGS: "-L/usr/local/opt/llvm/lib -mlinker-version=278 -nostdlib++ /usr/local/opt/llvm/lib/libc++.a /usr/local/opt/llvm/lib/libc++abi.a", CMAKE_FLAGS: "-DQUICK_LINT_JS_APPLE_CODESIGN_IDENTITY=quick-lint-js ${{ fromJSON('[\"\", \"-DQUICK_LINT_JS_ENABLE_APPLE_CODESIGN=TRUE\"]')[github.event_name == 'push' && github.repository_owner == 'quick-lint'] }}"}
           - {runs_on: ubuntu-latest, name: "Linux", archive_name: "linux", archive_extension: ".tar.gz", CC: gcc-8, CXX: g++-8, LDFLAGS: "-static-libgcc -static-libstdc++"}
           - {runs_on: windows-latest, name: "Windows", archive_name: "windows", archive_extension: ".zip", CMAKE_FLAGS: "-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded"}
     runs-on: ${{ matrix.toolchain.runs_on }}
@@ -33,6 +33,12 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v2
+
+      - name: install code signing keys
+        if: ${{ github.event_name == 'push' && github.repository_owner == 'quick-lint' }}
+        run: security import <(cat <<<"${APPLE_CODE_SIGN_KEY_PKCS7_PEM}")
+        env:
+          APPLE_CODE_SIGN_KEY_PKCS7_PEM: ${{ secrets.APPLE_CODE_SIGN_KEY_PKCS7_PEM }}
 
       - name: configure
         run: |
@@ -220,6 +226,7 @@ jobs:
         if: ${{ !matrix.manager.global && matrix.os.test_cmd }}
         run: node_modules/.bin/quick-lint-js.cmd --version
 
+        # @@@ check signature
 # quick-lint-js finds bugs in JavaScript programs.
 # Copyright (C) 2020  Matthew Glazar
 #
