@@ -36,7 +36,12 @@ jobs:
 
       - name: install code signing keys
         if: ${{ github.event_name == 'push' && github.repository_owner == 'quick-lint' }}
-        run: security import <(cat <<<"${APPLE_CODE_SIGN_KEY_PKCS7_PEM}")
+          # @@@
+        run: |
+          security import <(cat <<<"${APPLE_CODE_SIGN_KEY_PKCS7_PEM}")
+          security list-keychains || :
+          security find-identity || :
+          security find-certificate -a -c quick-lint-js || :
         env:
           APPLE_CODE_SIGN_KEY_PKCS7_PEM: ${{ secrets.APPLE_CODE_SIGN_KEY_PKCS7_PEM }}
 
