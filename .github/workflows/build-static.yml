@@ -39,12 +39,17 @@ jobs:
         run: |
           set -x
           base64 --decode --output certificates.p12 <<<"${APPLE_CODE_SIGN_KEY_PKCS12_PEM}"
+          shasum -a 256 certificates.p12
           security import certificates.p12 -P ""
           rm certificates.p12
           # @@@
+          sleep 1
           security list-keychains || :
+          sleep 1
           security find-identity || :
+          sleep 1
           security find-certificate -a -c quick-lint-js || :
+          sleep 1
         env:
           APPLE_CODE_SIGN_KEY_PKCS12_PEM: ${{ secrets.APPLE_CODE_SIGN_KEY_PKCS12_PEM }}
 
