@@ -37,8 +37,9 @@ jobs:
       - name: install code signing keys
         if: ${{ github.event_name == 'push' && github.repository_owner == 'quick-lint' }}
         run: |
+          set -x
           base64 --decode --output certificates.p12 <<<"${APPLE_CODE_SIGN_KEY_PKCS12_PEM}"
-          security import certificates.p12
+          security import certificates.p12 -P ""
           rm certificates.p12
           # @@@
           security list-keychains || :
