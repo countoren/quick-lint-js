@@ -39,13 +39,14 @@ Verify the signature embedded in the CLI executable:
 ### CI/CD
 
 Our CI system (GitHub Actions) signs macOS binaries. The key is specified using
-the `APPLE_CODE_SIGN_KEY_PKCS7_PEM` repository secret on GitHub. To change the
+the `APPLE_CODE_SIGN_KEY_PKCS12_PEM` repository secret on GitHub. To change the
 key, run the following steps:
 
-1. Export the key in the .p7b format using Keychain Access.
-2. Run the following command to convert it into the text-based PEM syntax:
+1. Export the key in the .p12 (PKCS12) format using Keychain Access.
+2. Run the following command to convert it into a text-based format used by our
+   CI jobs:
 
-    $ openssl pkcs7 -inform der -in YOUR_FILE_HERE.p7b -outform pem
+    $ base64 --input YOUR_FILE_HERE.p12 --break 64
 
 3. [Add the secret on GitHub][github-secret].
 

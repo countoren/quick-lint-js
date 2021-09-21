@@ -38,12 +38,12 @@ jobs:
         if: ${{ github.event_name == 'push' && github.repository_owner == 'quick-lint' }}
           # @@@
         run: |
-          security import <(cat <<<"${APPLE_CODE_SIGN_KEY_PKCS7_PEM}")
+          security import <(base64 --decode <<<"${APPLE_CODE_SIGN_KEY_PKCS12_PEM}")
           security list-keychains || :
           security find-identity || :
           security find-certificate -a -c quick-lint-js || :
         env:
-          APPLE_CODE_SIGN_KEY_PKCS7_PEM: ${{ secrets.APPLE_CODE_SIGN_KEY_PKCS7_PEM }}
+          APPLE_CODE_SIGN_KEY_PKCS12_PEM: ${{ secrets.APPLE_CODE_SIGN_KEY_PKCS12_PEM }}
 
       - name: configure
         run: |
