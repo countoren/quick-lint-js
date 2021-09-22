@@ -40,6 +40,7 @@ jobs:
         if: ${{ github.event_name == 'push' && github.repository_owner == 'quick-lint' }}
         run: |
           set -x # @@@
+          exec 2>&1 # @@@
 
           KEYCHAIN_PASSWORD=CI_KEYCHAIN_PASSWORD
           security create-keychain -p "${KEYCHAIN_PASSWORD}" "${APPLE_KEYCHAIN_PATH}"
@@ -49,7 +50,9 @@ jobs:
 
           base64 --decode --output certificates.p12 <<<"${APPLE_CODE_SIGN_KEY_PKCS12_PEM}"
           shasum -a 256 certificates.p12
-          security import certificates.p12 -P "" -k "${APPLE_KEYCHAIN_PATH}"
+          # @@@ which one is needed?
+          security import certificates.p12 -P "" -A
+          security import certificates.p12 -P "" -k "${APPLE_KEYCHAIN_PATH}" -A
           rm certificates.p12
 
           # @@@ is this needed?
@@ -60,6 +63,8 @@ jobs:
           security list-keychains || :
           sleep 1
           security find-identity -v || :
+          sleep 1
+          security find-identity -v "${APPLE_KEYCHAIN_PATH}" || :
           sleep 1
           security find-certificate -a -c quick-lint-js || :
           sleep 1
