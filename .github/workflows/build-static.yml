@@ -37,16 +37,27 @@ jobs:
       - name: install code signing keys
         if: ${{ github.event_name == 'push' && github.repository_owner == 'quick-lint' }}
         run: |
-          set -x
+          set -x # @@@
+
+          KEYCHAIN_PASSWORD=CI_KEYCHAIN_PASSWORD
+          security create-keychain -p "${KEYCHAIN_PASSWORD}" codesigning.keychain
+          security default-keychain -s codesigning.keychain
+          # @@@ is this needed?
+          security unlock-keychain -p "${KEYCHAIN_PASSWORD}" codesigning.keychain
+
           base64 --decode --output certificates.p12 <<<"${APPLE_CODE_SIGN_KEY_PKCS12_PEM}"
           shasum -a 256 certificates.p12
-          security import certificates.p12 -P ""
+          security import certificates.p12 -P "" -k codesigning.keychain
           rm certificates.p12
+
+          # @@@ is this needed?
+          security set-key-partition-list -S "apple-tool:,apple:,codesign:" -s -k "${KEYCHAIN_PASSWORD}" codesigning.keychain
+
           # @@@
           sleep 1
           security list-keychains || :
           sleep 1
-          security find-identity || :
+          security find-identity -v || :
           sleep 1
           security find-certificate -a -c quick-lint-js || :
           sleep 1
