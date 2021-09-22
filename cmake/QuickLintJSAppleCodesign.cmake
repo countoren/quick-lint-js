@@ -11,13 +11,16 @@ function (quick_lint_js_apple_codesign TARGET)
     message(FATAL_ERROR "Cannot find codesign utility for QUICK_LINT_JS_ENABLE_APPLE_CODESIGN")
   endif ()
 
+  set(EXTRA_OPTIONS)
+  list(APPEND EXTRA_OPTIONS --keychain "${QUICK_LINT_JS_APPLE_CODESIGN_KEYCHAIN}")
   # @@@ set the Xcode option
   add_custom_command(
     TARGET "${TARGET}"
     POST_BUILD
     COMMAND
       "${QUICK_LINT_JS_APPLE_CODESIGN}"
-      -s "${QUICK_LINT_JS_APPLE_CODESIGN_IDENTITY}"
+      ${EXTRA_OPTIONS}
+      --sign "${QUICK_LINT_JS_APPLE_CODESIGN_IDENTITY}"
       "$<TARGET_FILE:${TARGET}>"
     COMMENT "Signing ${TARGET}"
     VERBATIM

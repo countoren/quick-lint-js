@@ -46,6 +46,13 @@ set(
   STRING
   "Code signing identity to sign macOS programs with"
 )
+set(
+  QUICK_LINT_JS_APPLE_CODESIGN_KEYCHAIN
+  ""
+  CACHE
+  STRING
+  "Keychain to find QUICK_LINT_JS_APPLE_CODESIGN_IDENTITY in"
+)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
