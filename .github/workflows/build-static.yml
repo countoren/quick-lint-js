@@ -28,6 +28,7 @@ jobs:
       CMAKE_EXE_LINKER_FLAGS: ${{ matrix.toolchain.LDFLAGS }}
       CMAKE_EXTRA_FLAGS: ${{ matrix.toolchain.CMAKE_FLAGS }}
       CMAKE_SHARED_LINKER_FLAGS: ${{ matrix.toolchain.LDFLAGS }}
+      APPLE_KEYCHAIN_PATH: ${{ github.workspace }}/codesigning.keychain
       QLJS_COLLECT_COPYRIGHT_NO_WARNINGS: 1
 
     steps:
@@ -35,23 +36,24 @@ jobs:
         uses: actions/checkout@v2
 
       - name: install code signing keys
+        # @@@ macOS only
         if: ${{ github.event_name == 'push' && github.repository_owner == 'quick-lint' }}
         run: |
           set -x # @@@
 
           KEYCHAIN_PASSWORD=CI_KEYCHAIN_PASSWORD
-          security create-keychain -p "${KEYCHAIN_PASSWORD}" codesigning.keychain
-          security default-keychain -s codesigning.keychain
+          security create-keychain -p "${KEYCHAIN_PASSWORD}" "${APPLE_KEYCHAIN_PATH}"
+          security default-keychain -s "${APPLE_KEYCHAIN_PATH}"
           # @@@ is this needed?
-          security unlock-keychain -p "${KEYCHAIN_PASSWORD}" codesigning.keychain
+          security unlock-keychain -p "${KEYCHAIN_PASSWORD}" "${APPLE_KEYCHAIN_PATH}"
 
           base64 --decode --output certificates.p12 <<<"${APPLE_CODE_SIGN_KEY_PKCS12_PEM}"
           shasum -a 256 certificates.p12
-          security import certificates.p12 -P "" -k codesigning.keychain
+          security import certificates.p12 -P "" -k "${APPLE_KEYCHAIN_PATH}"
           rm certificates.p12
 
           # @@@ is this needed?
-          security set-key-partition-list -S "apple-tool:,apple:,codesign:" -s -k "${KEYCHAIN_PASSWORD}" codesigning.keychain
+          security set-key-partition-list -S "apple-tool:,apple:,codesign:" -s -k "${KEYCHAIN_PASSWORD}" "${APPLE_KEYCHAIN_PATH}"
 
           # @@@
           sleep 1
@@ -67,7 +69,7 @@ jobs:
       - name: configure
         run: |
           env | grep '^CMAKE\|^QUICK_LINT_JS' | sort
-          cmake ${CMAKE_C_COMPILER+-DCMAKE_C_COMPILER="${CMAKE_C_COMPILER}"} ${CMAKE_CXX_COMPILER+-DCMAKE_CXX_COMPILER="${CMAKE_CXX_COMPILER}"} -DCMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE}" -DBUILD_TESTING=NO -DCMAKE_C_FLAGS="${CMAKE_C_FLAGS}" -DCMAKE_CXX_FLAGS="${CMAKE_CXX_FLAGS}" -DCMAKE_EXE_LINKER_FLAGS="${CMAKE_EXE_LINKER_FLAGS}" -DCMAKE_SHARED_LINKER_FLAGS="${CMAKE_SHARED_LINKER_FLAGS}" -DQUICK_LINT_JS_APPLE_CODESIGN_KEYCHAIN="${PWD}/codesigning.keychain" ${CMAKE_EXTRA_FLAGS} -S . -B build
+          cmake ${CMAKE_C_COMPILER+-DCMAKE_C_COMPILER="${CMAKE_C_COMPILER}"} ${CMAKE_CXX_COMPILER+-DCMAKE_CXX_COMPILER="${CMAKE_CXX_COMPILER}"} -DCMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE}" -DBUILD_TESTING=NO -DCMAKE_C_FLAGS="${CMAKE_C_FLAGS}" -DCMAKE_CXX_FLAGS="${CMAKE_CXX_FLAGS}" -DCMAKE_EXE_LINKER_FLAGS="${CMAKE_EXE_LINKER_FLAGS}" -DCMAKE_SHARED_LINKER_FLAGS="${CMAKE_SHARED_LINKER_FLAGS}" -DQUICK_LINT_JS_APPLE_CODESIGN_KEYCHAIN="${APPLE_KEYCHAIN_PATH}" ${CMAKE_EXTRA_FLAGS} -S . -B build
         shell: bash
       - name: build
         run: cmake --build build --config Release --target quick-lint-js quick-lint-js-licenses
